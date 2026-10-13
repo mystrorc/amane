@@ -68,7 +68,13 @@ fn with_connection<T: Default>(work: impl FnOnce(&mut Connection) -> T) -> T {
             return T::default();
         };
 
-        work(connection)
+        let result = work(connection);
+
+        if !connection.ready() {
+            *slot = None;
+        }
+
+        result
     })
 }
 
@@ -173,7 +179,6 @@ impl Connection {
     // none when the sound server can't be reached
     fn open() -> Option<Self> {
         let mainloop = Mainloop::new()?;
-
         let mut context = Context::new(&mainloop, "amane")?;
 
         context.connect(None, FlagSet::NOFLAGS, None).ok()?;
@@ -254,6 +259,10 @@ impl Connection {
         let result = self.mainloop.iterate(true);
 
         matches!(result, IterateResult::Success(_))
+            && !matches!(
+                self.context.get_state(),
+                State::Failed | State::Terminated
+            )
     }
 }
 

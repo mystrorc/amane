@@ -38,14 +38,31 @@ impl Service for Battery {
     }
 
     fn update(&mut self) -> bool {
+        // If the path doesn't exist or is invalid, re-discover the battery
+        if self.path.as_ref().map_or(true, |p| !p.exists()) {
+            self.path = find();
+        }
+
         let Some(path) = &self.path else {
-            return false;
+            let before = (self.percent, self.charging, self.full);
+            self.percent = 0;
+            self.charging = false;
+            self.full = false;
+            return (self.percent, self.charging, self.full) != before;
         };
 
         let before = (self.percent, self.charging, self.full);
 
-        let capacity = read(path, "capacity");
-        let status = read(path, "status");
+        let mut capacity = read(path, "capacity");
+        let mut status = read(path, "status");
+
+        if capacity.is_empty() {
+            self.path = find();
+            if let Some(path) = &self.path {
+                capacity = read(path, "capacity");
+                status = read(path, "status");
+            }
+        }
 
         self.percent = capacity.parse().unwrap_or(0);
 
@@ -74,9 +91,10 @@ impl Battery {
     }
 }
 
-// the first battery that powers the computer, an AC adapter or a mouse's battery is skipped
+// finds the system battery, skipping peripheral devices (mice, keyboards, trackballs)
 fn find() -> Option<PathBuf> {
     let entries = fs::read_dir(POWER_SUPPLIES).ok()?;
+    let mut candidate = None;
 
     for entry in entries.flatten() {
         let path = entry.path();
@@ -85,14 +103,23 @@ fn find() -> Option<PathBuf> {
             continue;
         }
 
-        if read(&path, "scope") == "Device" {
-            continue;
-        }
+        let name = entry.file_name();
+        let name_str = name.to_string_lossy();
 
-        return Some(path);
+        // Peripheral devices (like wireless mice/trackballs) report scope = "Device"
+        let scope = read(&path, "scope");
+        if scope != "Device" {
+            // Prioritize primary laptop battery like BAT0, BAT1
+            if name_str.starts_with("BAT") {
+                return Some(path);
+            }
+            if candidate.is_none() {
+                candidate = Some(path);
+            }
+        }
     }
 
-    None
+    candidate
 }
 
 fn read(folder: &Path, name: &str) -> String {
