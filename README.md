@@ -14,6 +14,19 @@ Amane is a Rust library for building Wayland desktop shells, like bars, panels a
 
 Keep in mind, Amane is still early (0.1) and experimental, so things will break and change.
 
+## Fork Enhancements & Fixes (`custom` branch)
+
+This fork ([`mystrorc/amane`](https://github.com/mystrorc/amane)) tracks upstream [`MystiaFin/amane`](https://github.com/MystiaFin/amane) while maintaining key reliability and hardware compatibility enhancements:
+
+- **PulseAudio / PipeWire-Pulse Connection Resilience (`src/services/audio/pulse.rs`):**
+  - **Connection Lifecycle Guard:** Automatically inspects the PulseAudio connection state and resets the static connection slot (`*slot = None`) if the sound server drops or enters `State::Failed` / `State::Terminated`.
+  - **Auto-Reconnection:** Seamlessly recovers and reconnects when PipeWire / PulseAudio restarts or switches sinks without requiring an `amane restart` or restarting the shell process.
+
+- **Smart Battery Discovery & Peripheral Filtering (`src/services/battery.rs`):**
+  - **Primary Laptop Battery Prioritization:** Discovers and prioritizes primary onboard batteries (`BAT0`, `BAT1`) for system power readings.
+  - **Peripheral Device Exclusion:** Filters out wireless mice, keyboards, trackballs, and other peripherals reporting `scope = "Device"`.
+  - **Dynamic Re-discovery:** Automatically re-scans sysfs power supplies if a previously read battery path becomes invalid or reports empty capacity, preventing stale state or crashes upon docking, undocking, or suspend/resume.
+
 ## Documentation
 
 The full guide is at [mystiafin.github.io/amane](https://mystiafin.github.io/amane/). It walks you from your first shell through layout, widgets, input and animation, plus the built-in services for audio, network, bluetooth, notifications and workspaces.
@@ -35,7 +48,7 @@ You need a Rust toolchain with cargo. Cargo has to stay on your `PATH` after the
 Clone the repo and run `install.sh`. It installs the system libraries Amane needs with pacman, apt or dnf, then installs the CLI with `cargo install --path cli`:
 
 ```sh
-git clone https://github.com/MystiaFin/amane.git
+git clone https://github.com/mystrorc/amane.git
 cd amane
 ./install.sh
 ```
@@ -50,7 +63,7 @@ Add amane to your flake inputs, then add its package to your system packages:
 
 ```nix
 inputs.amane = {
-  url = "github:MystiaFin/amane";
+  url = "github:mystrorc/amane";
   inputs.nixpkgs.follows = "nixpkgs";
 };
 ```
@@ -62,7 +75,7 @@ environment.systemPackages = [ inputs.amane.packages.x86_64-linux.default ];
 or install it into your profile:
 
 ```sh
-nix profile install github:MystiaFin/amane
+nix profile install github:mystrorc/amane
 ```
 
 ## Commands
