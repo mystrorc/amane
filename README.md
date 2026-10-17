@@ -18,6 +18,9 @@ Keep in mind, Amane is still early (0.1) and experimental, so things will break 
 
 This fork ([`mystrorc/amane`](https://github.com/mystrorc/amane)) tracks upstream [`MystiaFin/amane`](https://github.com/MystiaFin/amane) while maintaining key reliability and hardware compatibility enhancements:
 
+- **Shell Project Manifest Extensions (`cli/src/project.rs`):**
+  - Expanded default shell project dependencies to bundle `zbus` and `serde_json`, allowing native desktop IPC integrations, settings daemon bridges, and display services without build manifest conflicts.
+
 - **PulseAudio / PipeWire-Pulse Connection Resilience (`src/services/audio/pulse.rs`):**
   - **Connection Lifecycle Guard:** Automatically inspects the PulseAudio connection state and resets the static connection slot (`*slot = None`) if the sound server drops or enters `State::Failed` / `State::Terminated`.
   - **Auto-Reconnection:** Seamlessly recovers and reconnects when PipeWire / PulseAudio restarts or switches sinks without requiring an `amane restart` or restarting the shell process.
