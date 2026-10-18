@@ -140,8 +140,8 @@ path = '{main}'
 
 [dependencies]
 amane = {{ path = '{library}' }}
-zbus = "5.19.0"
-serde_json = "1.0"
+zbus = \"5.19.0\"
+serde_json = \"1.0\"
 
 [profile.dev]
 debug = \"line-tables-only\"
