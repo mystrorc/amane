@@ -30,7 +30,22 @@ impl Gpu {
     }
 
     pub(super) fn give_back(&mut self, texture: Texture) {
-        self.spare.push(texture);
+        // Keep at most one spare texture of each usage (one canvas, one scratch).
+        // Any extra texture is dropped immediately to free VRAM and system memory at 4K.
+        let already_has = self.spare.iter().any(|t| {
+            t.width() == texture.width()
+                && t.height() == texture.height()
+                && t.usage() == texture.usage()
+        });
+
+        if !already_has {
+            self.spare.push(texture);
+        }
+    }
+
+    pub fn clear_cached(&mut self) {
+        self.spare.clear();
+        self.painted.clear();
     }
 
     fn take(&mut self, width: u32, height: u32, usage: TextureUsages) -> Option<Texture> {

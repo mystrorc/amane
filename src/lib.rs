@@ -24,6 +24,11 @@ mod wayland;
 mod widgets;
 mod window;
 
+#[cfg(target_env = "gnu")]
+pub use allocator::limit as limit_allocator;
+#[cfg(not(target_env = "gnu"))]
+pub fn limit_allocator() {}
+
 pub use animation::{Animation, Blend, Easing, request_frame};
 pub use app::App;
 pub use dbus::{Argument, Bus, Method, Signal, Value};

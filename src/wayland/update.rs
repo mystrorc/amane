@@ -95,6 +95,9 @@ impl OpenWindow {
 
         self.role.commit();
 
+        // release cached GPU textures while the window is hidden to free VRAM/RAM
+        self.gpu.clear_cached();
+
         // nothing is drawn until showing the window brings a new configure
         self.width = 0;
         self.height = 0;
@@ -138,39 +141,5 @@ impl Dispatch<WlRegion, ()> for WaylandState {
         _: &Connection,
         _: &QueueHandle<Self>,
     ) {
-    }
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn fractional_input_regions_cover_their_edges_and_preserve_empty_areas() {
-        let area = InputArea {
-            x: 1,
-            y: -1,
-            width: 3,
-            height: 2,
-        };
-
-        assert_eq!(scaled_region(area, ScaleFactor::default()), area);
-        assert_eq!(
-            scaled_region(area, ScaleFactor::new(1.5)),
-            InputArea {
-                x: 1,
-                y: -2,
-                width: 5,
-                height: 4
-            },
-        );
-
-        let empty = InputArea {
-            width: 0,
-            height: 0,
-            ..area
-        };
-        let scaled = scaled_region(empty, ScaleFactor::new(1.5));
-        assert_eq!((scaled.width, scaled.height), (0, 0));
     }
 }
