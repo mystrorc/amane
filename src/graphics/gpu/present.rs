@@ -1,4 +1,4 @@
-use vello::wgpu::{CurrentSurfaceTexture, SurfaceTexture};
+use vello::wgpu::{CurrentSurfaceTexture, PollType, SurfaceTexture};
 
 use crate::graphics::renderer::Command;
 
@@ -52,6 +52,8 @@ impl Gpu {
 
         // presenting attaches the frame to the wayland surface and commits it
         self.queue.present(frame);
+
+        let _ = self.device.poll(PollType::Poll);
 
         true
     }
