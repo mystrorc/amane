@@ -8,8 +8,18 @@ use crate::{PamConfig, PamError, PamResult, Service};
 // set by Lock::start, taken by the event loop when it wakes
 static REQUESTED: AtomicBool = AtomicBool::new(false);
 
-// the pam service file in /etc/pam.d that checks the password
-const PAM_SERVICE: &str = "login";
+// the pam service file in /etc/pam.d that checks the password.
+// Screen lockers should use a dedicated screen lock policy (like vlock or swaylock)
+// where account management does not require root privileges to read /etc/shadow.
+fn pam_service() -> &'static str {
+    if std::path::Path::new("/etc/pam.d/vlock").exists() {
+        "vlock"
+    } else if std::path::Path::new("/etc/pam.d/swaylock").exists() {
+        "swaylock"
+    } else {
+        "login"
+    }
+}
 
 // what the lock screen shows while App::lock holds the session
 #[derive(Default)]
@@ -82,7 +92,7 @@ impl Lock {
      * and the screen unlocks only if it accepts the password
      */
     pub fn unlock(password: &str) {
-        let _ = Self::begin(PamConfig::new(PAM_SERVICE), Some(String::from(password)));
+        let _ = Self::begin(PamConfig::new(pam_service()), Some(String::from(password)));
     }
 
     /// Starts interactive unlocking for the current user. Use `Pam` to read and answer prompts.

@@ -12,6 +12,7 @@ const PAM_SUCCESS: c_int = 0;
 const PAM_BUF_ERR: c_int = 5;
 const PAM_PERM_DENIED: c_int = 6;
 const PAM_AUTH_ERR: c_int = 7;
+const PAM_AUTHINFO_UNAVAIL: c_int = 9;
 const PAM_USER_UNKNOWN: c_int = 10;
 const PAM_MAXTRIES: c_int = 11;
 const PAM_NEW_AUTHTOK_REQD: c_int = 12;
@@ -133,7 +134,12 @@ pub(super) fn authenticate(
     }
     if handle.status == PAM_SUCCESS {
         // accepting a password must not bypass account expiry or access restrictions
-        handle.status = unsafe { pam_acct_mgmt(handle.pointer, NO_FLAGS) };
+        let acct_status = unsafe { pam_acct_mgmt(handle.pointer, NO_FLAGS) };
+        // An unprivileged session locker cannot query shadow files (PAM_AUTHINFO_UNAVAIL).
+        // Only reject if the account is explicitly denied, expired, or locked out.
+        if acct_status != PAM_SUCCESS && acct_status != PAM_AUTHINFO_UNAVAIL {
+            handle.status = acct_status;
+        }
     }
     if session.aborted() {
         return PamResult::Aborted;
@@ -164,6 +170,7 @@ fn classify(handle: *mut c_void, code: c_int) -> PamResult {
             .to_string_lossy()
             .into_owned()
     };
+    eprintln!("amane: PAM authentication error ({code}): {message}");
     let error = PamError::Native { code, message };
     match code {
         // policy or credential rejection, distinct from a broken/unavailable PAM backend
