@@ -118,6 +118,24 @@ impl Lock {
         }
     }
 
+    /// Forces the lock to unlock without PAM check, e.g. on external logind Unlock signal or emergency recovery.
+    pub fn force_unlock() {
+        let attempt = {
+            let mut lock = Self::write();
+            let attempt = lock.attempt.take();
+            if let Some(attempt) = &attempt {
+                attempt.abort();
+            }
+            lock.checking = false;
+            lock.failed = false;
+            lock.unlocked = true;
+            attempt
+        };
+        if let Some(attempt) = attempt {
+            pam::abort_session(&attempt);
+        }
+    }
+
     fn begin(config: PamConfig, password: Option<String>) -> Result<(), PamError> {
         let config = config.for_lock()?;
         let attempt = Arc::new(Session::default());

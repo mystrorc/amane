@@ -141,6 +141,7 @@ path = '{main}'
 [dependencies]
 amane = {{ path = '{library}' }}
 zbus = \"5.19.0\"
+serde = {{ version = \"1.0\", features = [\"derive\"] }}
 serde_json = \"1.0\"
 
 [profile.dev]
