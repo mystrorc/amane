@@ -10,6 +10,7 @@ mod redraw;
 mod scale;
 mod seat;
 mod socket;
+mod touch;
 mod surface;
 mod update;
 mod wake;
@@ -35,7 +36,7 @@ use smithay_client_toolkit::{
 use wayland_client::{
     Connection, QueueHandle,
     globals::registry_queue_init,
-    protocol::{wl_keyboard::WlKeyboard, wl_surface::WlSurface},
+    protocol::{wl_keyboard::WlKeyboard, wl_surface::WlSurface, wl_touch::WlTouch},
 };
 
 use crate::ipc::IpcHandlers;
@@ -83,6 +84,8 @@ struct WaylandState {
     // kept so they can be released when the mouse or keyboard is unplugged
     pointer_device: Option<ThemedPointer<()>>,
     keyboard_device: Option<WlKeyboard>,
+    touch_device: Option<WlTouch>,
+    active_touches: std::collections::HashMap<i32, touch::ActiveTouch>,
 
     // files dragged in from other programs, none when the compositor lacks it
     data_device_manager: Option<DataDeviceManagerState>,
@@ -163,6 +166,8 @@ impl WaylandApp {
             pointer_device: None,
             cursor_shown: None,
             keyboard_device: None,
+            touch_device: None,
+            active_touches: std::collections::HashMap::new(),
 
             data_device_manager,
             data_device: None,

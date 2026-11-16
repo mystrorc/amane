@@ -50,6 +50,15 @@ impl SeatHandler for WaylandState {
                 self.keyboard_device = Some(keyboard);
             }
 
+            Capability::Touch => {
+                let touch = self
+                    .seat
+                    .get_touch(qh, &seat)
+                    .expect("failed to get touch");
+
+                self.touch_device = Some(touch);
+            }
+
             _ => {}
         }
     }
@@ -74,6 +83,14 @@ impl SeatHandler for WaylandState {
                 if let Some(keyboard) = self.keyboard_device.take() {
                     keyboard.release();
                 }
+            }
+
+            Capability::Touch => {
+                if let Some(touch) = self.touch_device.take() {
+                    touch.release();
+                }
+
+                self.active_touches.clear();
             }
 
             _ => {}

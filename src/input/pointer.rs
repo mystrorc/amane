@@ -140,6 +140,10 @@ impl Pointer {
         self.pressed = self.find_topmost(|target| target.handlers.click.is_some());
     }
 
+    pub fn cancel_press(&mut self) {
+        self.pressed = None;
+    }
+
     // a click only counts when the button is let go over the widget it was pressed on
     pub fn release(&mut self, button: Button) -> bool {
         let Some(pressed) = self.pressed.take() else {
@@ -171,6 +175,10 @@ impl Pointer {
 
     pub fn stop_drag(&mut self) {
         self.dragged = None;
+    }
+
+    pub fn is_dragging(&self) -> bool {
+        self.dragged.is_some()
     }
 
     // keeps reporting to the target pressed on, even after the pointer leaves it
