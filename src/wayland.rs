@@ -86,6 +86,7 @@ struct WaylandState {
     keyboard_device: Option<WlKeyboard>,
     touch_device: Option<WlTouch>,
     active_touches: std::collections::HashMap<i32, touch::ActiveTouch>,
+    last_touch_surface: Option<WlSurface>,
 
     // files dragged in from other programs, none when the compositor lacks it
     data_device_manager: Option<DataDeviceManagerState>,
@@ -168,6 +169,7 @@ impl WaylandApp {
             keyboard_device: None,
             touch_device: None,
             active_touches: std::collections::HashMap::new(),
+            last_touch_surface: None,
 
             data_device_manager,
             data_device: None,

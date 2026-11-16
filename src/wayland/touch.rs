@@ -27,6 +27,17 @@ impl TouchHandler for WaylandState {
         id: i32,
         position: (f64, f64),
     ) {
+        // If touching a different surface than previous touch, notify previous window it left
+        if let Some(last_surface) = self.last_touch_surface.take() {
+            if last_surface != surface {
+                if let Some(prev_window) = self.window(&last_surface) {
+                    prev_window.pointer.leave();
+                }
+                self.request_frame_on(&last_surface);
+            }
+        }
+        self.last_touch_surface = Some(surface.clone());
+
         let (x, y) = (position.0 as f32, position.1 as f32);
 
         if let Some(window) = self.window(&surface) {
@@ -65,7 +76,9 @@ impl TouchHandler for WaylandState {
                     window.pointer.stop_drag();
                     window.pointer.cancel_press();
                 }
-                window.pointer.leave();
+                // NOTE: Do not call window.pointer.leave() here!
+                // Leaving the pointer inside the surface preserves hover state,
+                // so pulldowns and panels do not auto-dismiss when the finger lifts.
             }
             self.request_frame_on(&touch.surface);
         }
@@ -110,8 +123,10 @@ impl TouchHandler for WaylandState {
                 window.pointer.move_to(x, y);
                 window.pointer.drag();
             } else {
-                // If moved more than touch slop (8 pixels), transition to drag-scroll
-                if dx.abs() > 8.0 || dy.abs() > 8.0 {
+                // Only transition to drag-scroll if there is actually a scrollable target underneath!
+                // This prevents accidental touch movement from cancelling taps on buttons/tabs.
+                let can_scroll = window.pointer.has_scroll_target();
+                if can_scroll && (dx.abs() > 20.0 || dy.abs() > 20.0) {
                     now_scrolling = true;
                     window.pointer.cancel_press();
                     window.pointer.stop_drag();
@@ -157,14 +172,14 @@ impl TouchHandler for WaylandState {
     }
 
     fn cancel(&mut self, _conn: &Connection, _qh: &QueueHandle<Self>, _touch: &WlTouch) {
-        let touches: Vec<_> = std::mem::take(&mut self.active_touches).into_values().collect();
-        for touch in touches {
-            if let Some(window) = self.window(&touch.surface) {
+        if let Some(surface) = self.last_touch_surface.take() {
+            if let Some(window) = self.window(&surface) {
                 window.pointer.stop_drag();
                 window.pointer.cancel_press();
                 window.pointer.leave();
             }
-            self.request_frame_on(&touch.surface);
+            self.request_frame_on(&surface);
         }
+        self.active_touches.clear();
     }
 }

@@ -181,6 +181,10 @@ impl Pointer {
         self.dragged.is_some()
     }
 
+    pub fn has_scroll_target(&self) -> bool {
+        self.find_topmost(|target| target.handlers.scroll.is_some()).is_some()
+    }
+
     // keeps reporting to the target pressed on, even after the pointer leaves it
     pub fn drag(&self) -> bool {
         let Some(index) = self.dragged else {
